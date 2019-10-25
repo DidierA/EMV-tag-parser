@@ -1,5 +1,6 @@
 #include "emvTagList.h"
 #include "hashtable.h"
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -29,6 +30,7 @@ int emvInfo_get(tlvInfo_t *t,int * tindex, dict_t *hashtab[HASHSIZE]){
 	dict = lookup(&t[*tindex].tlv.Tag, hashtab);
 	if(dict == NULL){
 		//printf("%s\n","Tag not in list" );
+		t[*tindex].Description = "Unknown" ;
 		return 1;
 	}
 	t[*tindex].PC = dict->value->PC;
@@ -66,6 +68,16 @@ tlvInfo_t emvparse(unsigned char arr[], unsigned short size, tlvInfo_t * t, int 
 		}
 }
 
+void print_hex(unsigned char *p, int sz) {
+	for (int i=0; i<sz; i++) {
+		printf("%02X%c", p[i], (i%2) ? ' ' : '\0' ) ;
+	}
+	printf("\t");
+	for (int i=0; i<sz; i++) {
+		printf("%c", isprint(p[i]) ? p[i] : '.') ;
+	}
+}
+
 void emvPrint_result(tlvInfo_t* t, int tindex){
 	int i,j;
 	int tabs=1;
@@ -76,10 +88,10 @@ void emvPrint_result(tlvInfo_t* t, int tindex){
 		if(trackLen >=composedLen) tabs--;
 		printf("%sTag:%X(%s)\n", emvPrint_tabs(tabs), t[i].tlv.Tag, t[i].Description);
 		printf("%slen:%X(decimal: %d )\n", emvPrint_tabs(tabs+1), t[i].tlv.Len, t[i].tlv.Len);
-		printf("%sTemplate:%X\n", emvPrint_tabs(tabs+1), t[i].Template);
-		printf("%sSource:%s\n", emvPrint_tabs(tabs+1), emvPrint_Source(t[i].Source));
+		// printf("%sTemplate:%X\n", emvPrint_tabs(tabs+1), t[i].Template);
+		// printf("%sSource:%s\n", emvPrint_tabs(tabs+1), emvPrint_Source(t[i].Source));
 		printf("%sType:%s\n", emvPrint_tabs(tabs+1), t[i].PC?"Constructed" : "Primitive");
-		printf("%sRangeLen:%s\n", emvPrint_tabs(tabs+1), t[i].RangeLen);
+		// printf("%sRangeLen:%s\n", emvPrint_tabs(tabs+1), t[i].RangeLen);
 		if(t[i].PC == CONSTRUCTED){
 			trackLen =0;
 			composedLen = 0;
@@ -87,9 +99,10 @@ void emvPrint_result(tlvInfo_t* t, int tindex){
 			tabs++;
 		}else{
 			printf("%s%s",emvPrint_tabs(tabs+1), "val:");
-			for(j=0; j< t[i].tlv.Len; j++){
+			/* for(j=0; j< t[i].tlv.Len; j++){
 				printf("%X", t[i].tlv.Val[j]);
-			}
+			}*/
+			print_hex(t[i].tlv.Val, t[i].tlv.Len) ;
 			printf("\n");
 			trackLen += sizeof(t[i].tlv.Tag);
 			trackLen += sizeof(t[i].tlv.Len);
